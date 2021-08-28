@@ -1,90 +1,73 @@
-package payload
+package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
-
-	"github.com/luraproject/lura/config"
-	"github.com/luraproject/lura/proxy"
-	"github.com/xeipuuv/gojsonschema"
+	"time"
 )
 
-// Namespace ...
-const Namespace = "github.com/devopsfaith/krakend-payload"
-
-// ErrEmptyBody ...
-var ErrEmptyBody = errors.New("could not validate an empty body")
-
-// ProxyFactory creates an proxy factory over the injected one adding a JSON Schema
-// validator middleware to the pipe when required
-func ProxyFactory(pf proxy.Factory) proxy.FactoryFunc {
-	return proxy.FactoryFunc(func(cfg *config.EndpointConfig) (proxy.Proxy, error) {
-		next, err := pf.New(cfg)
-		if err != nil {
-			return proxy.NoopProxy, err
-		}
-		schemaLoader, ok := configGetter(cfg.ExtraConfig).(gojsonschema.JSONLoader)
-		if !ok || schemaLoader == nil {
-			return next, nil
-		}
-		return newProxy(schemaLoader, next), nil
-	})
+func init() {
+	fmt.Println("headerModPlugin plugin is loaded!")
 }
 
-func newProxy(schemaLoader gojsonschema.JSONLoader, next proxy.Proxy) proxy.Proxy {
-	return func(ctx context.Context, r *proxy.Request) (*proxy.Response, error) {
-		if r.Body == nil {
-			return nil, ErrEmptyBody
-		}
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return nil, err
-		}
-		r.Body.Close()
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+func main() {}
 
-		result, err := gojsonschema.Validate(schemaLoader, gojsonschema.NewBytesLoader(body))
-		if err != nil {
-			return nil, err
-		}
-		if !result.Valid() {
-			return nil, &validationError{errs: result.Errors()}
-		}
+// HandlerRegisterer is the name of the symbol krakend looks up to try and register plugins
+var HandlerRegisterer registrable = registrable("headerModPlugin")
 
-		return next(ctx, r)
-	}
+type registrable string
+
+const outputHeaderName = "X-Friend-User"
+const pluginName = "headerModPlugin"
+
+func (r registrable) RegisterHandlers(f func(
+	name string,
+	handler func(
+		context.Context,
+		map[string]interface{},
+		http.Handler) (http.Handler, error),
+)) {
+	f(pluginName, r.registerHandlers)
 }
 
-func configGetter(cfg config.ExtraConfig) interface{} {
-	v, ok := cfg[Namespace]
+func (r registrable) registerHandlers(ctx context.Context, extra map[string]interface{}, handler http.Handler) (http.Handler, error) {
+	attachUserID, ok := extra["attachuserid"].(string)
 	if !ok {
-		return nil
+		panic(errors.New("incorrect config").Error())
 	}
-	buf := new(bytes.Buffer)
-	if err := json.NewEncoder(buf).Encode(v); err != nil {
-		return nil
-	}
-	return gojsonschema.NewBytesLoader(buf.Bytes())
-}
 
-type validationError struct {
-	errs []gojsonschema.ResultError
-}
+	client := &http.Client{Timeout: 3 * time.Second}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-func (v *validationError) Error() string {
-	errs := make([]string, len(v.errs))
-	for i, desc := range v.errs {
-		errs[i] = fmt.Sprintf("- %s", desc)
-	}
-	return strings.Join(errs, "\n")
-}
+		rq, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.github.com/users/%v", attachUserID), nil)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-func (v *validationError) StatusCode() int {
-	return http.StatusBadRequest
+		rq.Header.Set("Content-Type", "application/json")
+
+		rs, err := client.Do(rq)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotAcceptable)
+			return
+		}
+		defer rs.Body.Close()
+
+		rsBodyBytes, err := ioutil.ReadAll(rs.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotAcceptable)
+			return
+		}
+
+		r2 := new(http.Request)
+		*r2 = *r
+
+		r2.Header.Set(outputHeaderName, string(rsBodyBytes))
+
+		handler.ServeHTTP(w, r2)
+	}), nil
 }
