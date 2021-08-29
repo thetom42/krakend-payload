@@ -1,0 +1,1 @@
+go build -buildmode=plugin -a -installsuffix cgo -ldflags -w

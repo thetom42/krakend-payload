@@ -1,0 +1,7 @@
+FROM golang:1.16.4
+
+VOLUME ["/temp"]
+
+WORKDIR /temp
+
+ENTRYPOINT ["/bin/sh"]
