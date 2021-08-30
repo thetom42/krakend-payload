@@ -76,6 +76,13 @@ func (r registerer) registerHandlers(ctx context.Context, extra map[string]inter
 
 		fmt.Println("krakend-payload handler about to do something")
 
+		rBodyBytes, err :=  ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotAcceptable)
+			return
+		}
+		fmt.Println(string(rBodyBytes))
+
 		handler.ServeHTTP(w, r2)
 	}), nil
 }
