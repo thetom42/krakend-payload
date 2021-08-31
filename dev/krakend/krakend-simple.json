@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "plugin": {
+    "folder": "./plugins/",
+    "pattern": ".so"
+  },
+  "extra_config": {
+    "github_com/devopsfaith/krakend/transport/http/server/handler": {
+      "name": "krakend-payload",
+      "attachuserid": "rsc"
+   }
+  },
+  "timeout": "3000ms",
+  "cache_ttl": "300s",
+  "output_encoding": "json",
+  "name": "CoolUserService",
+  "endpoints": [
+    {
+      "endpoint": "api/get-user/{userId}",
+      "method": "GET",
+      "extra_config": {},
+      "output_encoding": "json",
+      "concurrent_calls": 1,
+      "headers_to_pass": [
+        "X-Friend-User"
+      ],
+      "querystring_params": [],
+      "backend": [
+        {
+          "method": "GET",
+          "host": [ "https://api.github.com" ],
+          "url_pattern": "/users/{userId}"
+        }
+      ]
+    }
+  ]
+}

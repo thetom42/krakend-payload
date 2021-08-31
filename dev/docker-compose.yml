@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  restserver:
+    build:
+      context: .
+      dockerfile: Dockerfile.restserver
+    ports: 
+      - "2323:1323"
+  krakend:
+    image: devopsfaith/krakend:1.4.1
+    depends_on:
+      - restserver
+    entrypoint: ["krakend", "run", "-d", "-c", "/etc/krakend/krakend.json"]
+    ports: 
+      - "8880:8080"
+    volumes:
+      - type: bind
+        source: ./krakend
+        target: /etc/krakend
