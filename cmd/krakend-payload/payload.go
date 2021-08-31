@@ -12,7 +12,7 @@ import (
 type registerer string
 
 // ClientRegisterer is the symbol the plugin loader will try to load. It must implement the RegisterClient interface
-var ClientRegisterer = registerer("krakend-payload")
+var ClientRegisterer = registerer("krakend-payload-proxy")
 
 func (r registerer) RegisterClients(f func(
 	name string,
