@@ -1,7 +1,7 @@
 {
     "version": 2,
     "name": "gateway-test",
-    "port": 8080,
+    "port": 8880,
     "cache_ttl": "3600s",
     "timeout": "3s",
     "plugin": {
@@ -39,7 +39,7 @@
             "backend": [
                 {
                     "host": [
-                        "http://172.18.0.1:2323"
+                        "http://172.18.0.1:1323"
                     ],
                     "url_pattern": "/",
                     "extra_config": {
@@ -58,7 +58,7 @@
             "backend": [
                 {
                     "host": [
-                        "http://localhost:8080"
+                        "http://localhost:8880"
                     ],
                     "url_pattern": "/__debug/supu",
                     "extra_config": {
