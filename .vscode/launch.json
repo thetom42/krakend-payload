@@ -11,7 +11,7 @@
             "cwd": "${workspaceFolder}/dev/krakend"
 		},
 		{
-			"name": "Attach to Process",
+			"name": "Attach to krakend-ce",
 			"type": "go",
 			"request": "attach",
 			"mode": "local",

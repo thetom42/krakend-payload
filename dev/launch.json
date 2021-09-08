@@ -2,13 +2,20 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "KrakenD",
+			"name": "Launch krakend-ce",
 			"type": "go",
 			"request": "launch",
-			"mode": "debug",
-			"program": "${workspaceFolder}/cmd/gateway/main.go",
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal"
+			"mode": "auto",
+			"program": "${workspaceFolder}/cmd/krakend-ce/main.go",
+			"args": ["run", "-d", "-c", "krakend.json"],
+            "cwd": "${workspaceFolder}/dev/krakend"
+		},
+		{
+			"name": "Attach to krakend-ce",
+			"type": "go",
+			"request": "attach",
+			"mode": "local",
+			"processId": 0
 		}
     ]
 }
